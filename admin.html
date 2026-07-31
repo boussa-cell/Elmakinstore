@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم</title>
+<link href="https://fonts.googleapis.com/css2?family=Rakkas&family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{ --ink:#16332B; --paper:#EFEFE9; --paper-2:#E4E4DC; --red:#C8452E; --yellow:#E8B23B; --line:#c9c9bd; --white:#FBFBF8; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Tajawal',sans-serif; background:var(--paper); color:var(--ink); min-height:100vh;}
+  .topbar{background:var(--ink); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;}
+  .topbar h1{font-family:'Rakkas'; font-size:20px;}
+  .topbar button{background:transparent; border:1px solid rgba(255,255,255,.35); color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; font-family:'Tajawal'; font-weight:700; font-size:13px;}
+  .wrap{max-width:760px; margin:0 auto; padding:20px;}
+  .login-box{max-width:360px; margin:80px auto; background:var(--white); border:1px solid var(--line); border-radius:16px; padding:28px;}
+  .login-box h2{font-family:'Rakkas'; font-size:24px; text-align:center; margin-bottom:20px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:13px; font-weight:700; margin-bottom:6px;}
+  .field input, .field textarea{width:100%; border:1.5px solid var(--line); border-radius:10px; padding:11px; font-family:'Tajawal'; background:var(--paper);}
+  .btn{width:100%; background:var(--ink); color:#fff; border:none; border-radius:10px; padding:13px; font-weight:800; cursor:pointer; margin-top:6px;}
+  .btn.red{background:var(--red);}
+  .error{color:var(--red); font-size:13px; margin-top:8px; text-align:center;}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  .card h3{font-family:'Rakkas'; font-size:18px; margin-bottom:12px;}
+  .prod-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed var(--line);}
+  .prod-row:last-child{border-bottom:none;}
+  .prod-name{font-weight:700; font-size:14px;}
+  .prod-sub{font-family:'IBM Plex Sans Arabic'; font-size:12px; color:#7a8580;}
+  .row-actions{display:flex; gap:8px;}
+  .icon-btn{background:var(--paper-2); border:none; border-radius:8px; width:34px; height:34px; cursor:pointer; font-size:15px;}
+  .tier-inputs{display:flex; gap:8px; margin-bottom:8px;}
+  .tier-inputs input{flex:1; padding:8px; border:1.5px solid var(--line); border-radius:8px; font-family:'IBM Plex Sans Arabic'; font-size:13px;}
+  .add-product-toggle{background:var(--yellow); color:var(--ink); border:none; border-radius:10px; padding:12px; font-weight:800; width:100%; cursor:pointer; margin-bottom:14px;}
+  .hidden{display:none;}
+  .save-msg{font-size:12.5px; color:#2e7d32; margin-top:8px; text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="loginView" class="login-box">
+  <h2>دخول لوحة التحكم</h2>
+  <div class="field"><label>البريد الإلكتروني</label><input id="loginEmail" type="email"></div>
+  <div class="field"><label>كلمة المرور</label><input id="loginPass" type="password"></div>
+  <button class="btn" onclick="doLogin()">دخول</button>
+  <div class="error" id="loginError"></div>
+</div>
+
+<div id="dashView" class="hidden">
+  <div class="topbar">
+    <h1>لوحة التحكم</h1>
+    <button onclick="doLogout()">تسجيل خروج</button>
+  </div>
+  <div class="wrap">
+
+    <div class="card">
+      <h3>إعدادات المتجر</h3>
+      <div class="field"><label>اسم المتجر</label><input id="s_store_name"></div>
+      <div class="field"><label>رقم واتساب (صيغة دولية بدون + مثال 9665xxxxxxxx)</label><input id="s_whatsapp_number"></div>
+      <div class="field"><label>عنوان الواجهة الرئيسية</label><input id="s_hero_title"></div>
+      <div class="field"><label>الوصف تحت العنوان</label><input id="s_hero_subtitle"></div>
+      <button class="btn" onclick="saveSettings()">حفظ الإعدادات</button>
+      <div class="save-msg hidden" id="settingsMsg">تم الحفظ ✓</div>
+    </div>
+
+    <button class="add-product-toggle" onclick="toggleAddForm()">+ إضافة منتج جديد</button>
+
+    <div class="card hidden" id="addForm">
+      <h3>منتج جديد</h3>
+      <div class="field"><label>الفئة</label><input id="np_cat" placeholder="مثال: دفاتر وكراسات"></div>
+      <div class="field"><label>اسم المنتج</label><input id="np_name"></div>
+      <div class="field"><label>وحدة البيع</label><input id="np_unit" placeholder="مثال: سعر الدستة (١٢ حبة)"></div>
+      <div class="field"><label>أيقونة (رمز تعبيري)</label><input id="np_icon" placeholder="📓" value="📦"></div>
+      <label style="font-size:13px;font-weight:700;">مستويات السعر (٣ مستويات)</label>
+      <div class="tier-inputs"><input id="np_t1_q" placeholder="١–٤ دستة"><input id="np_t1_p" placeholder="سعر" type="number"></div>
+      <div class="tier-inputs"><input id="np_t2_q" placeholder="٥–٩ دستة"><input id="np_t2_p" placeholder="سعر" type="number"></div>
+      <div class="tier-inputs"><input id="np_t3_q" placeholder="١٠+ دستة"><input id="np_t3_p" placeholder="سعر" type="number"></div>
+      <button class="btn" onclick="addProduct()">حفظ المنتج</button>
+    </div>
+
+    <div class="card">
+      <h3>المنتجات الحالية</h3>
+      <div id="productList"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let products = [];
+
+async function checkSession(){
+  const { data:{ session } } = await supabase.auth.getSession();
+  if(session){ showDash(); } else { showLogin(); }
+}
+function showLogin(){ document.getElementById('loginView').classList.remove('hidden'); document.getElementById('dashView').classList.add('hidden'); }
+async function showDash(){
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('dashView').classList.remove('hidden');
+  await loadSettings();
+  await loadProducts();
+}
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if(error){ document.getElementById('loginError').textContent = 'بيانات الدخول غير صحيحة'; return; }
+  showDash();
+}
+async function doLogout(){ await supabase.auth.signOut(); showLogin(); }
+
+async function loadSettings(){
+  const { data } = await supabase.from('settings').select('*');
+  const s = Object.fromEntries((data||[]).map(r=>[r.key, r.value]));
+  document.getElementById('s_store_name').value = s.store_name||'';
+  document.getElementById('s_whatsapp_number').value = s.whatsapp_number||'';
+  document.getElementById('s_hero_title').value = s.hero_title||'';
+  document.getElementById('s_hero_subtitle').value = s.hero_subtitle||'';
+}
+async function saveSettings(){
+  const updates = [
+    { key:'store_name', value:document.getElementById('s_store_name').value.trim() },
+    { key:'whatsapp_number', value:document.getElementById('s_whatsapp_number').value.trim() },
+    { key:'hero_title', value:document.getElementById('s_hero_title').value.trim() },
+    { key:'hero_subtitle', value:document.getElementById('s_hero_subtitle').value.trim() },
+  ];
+  for(const u of updates){ await supabase.from('settings').update({value:u.value}).eq('key', u.key); }
+  const msg = document.getElementById('settingsMsg');
+  msg.classList.remove('hidden'); setTimeout(()=>msg.classList.add('hidden'), 2000);
+}
+
+async function loadProducts(){
+  const { data } = await supabase.from('products').select('*').order('sort_order');
+  products = data || [];
+  renderProductList();
+}
+function renderProductList(){
+  const wrap = document.getElementById('productList');
+  if(products.length===0){ wrap.innerHTML = '<p style="color:#7a8580;font-size:13px;">ما فيه منتجات بعد</p>'; return; }
+  wrap.innerHTML = products.map(p=>`
+    <div class="prod-row">
+      <div>
+        <div class="prod-name">${p.icon||'📦'} ${p.name}</div>
+        <div class="prod-sub">${p.category} — ${p.tiers.map(t=>t.p+'ر.س').join(' / ')}</div>
+      </div>
+      <div class="row-actions">
+        <button class="icon-btn" onclick="editPrices('${p.id}')">✏️</button>
+        <button class="icon-btn" onclick="deleteProduct('${p.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleAddForm(){ document.getElementById('addForm').classList.toggle('hidden'); }
+
+async function addProduct(){
+  const cat = document.getElementById('np_cat').value.trim();
+  const name = document.getElementById('np_name').value.trim();
+  const unit = document.getElementById('np_unit').value.trim();
+  const icon = document.getElementById('np_icon').value.trim() || '📦';
+  const tiers = [1,2,3].map(i=>({
+    q: document.getElementById(`np_t${i}_q`).value.trim(),
+    p: parseFloat(document.getElementById(`np_t${i}_p`).value) || 0
+  }));
+  if(!cat||!name||!unit){ alert('عبّي الفئة واسم المنتج ووحدة البيع'); return; }
+  await supabase.from('products').insert({ category:cat, name, unit, icon, tiers, sort_order: products.length+1 });
+  document.querySelectorAll('#addForm input').forEach(i=>i.value='');
+  document.getElementById('addForm').classList.add('hidden');
+  await loadProducts();
+}
+
+async function deleteProduct(id){
+  if(!confirm('تحذف هذا المنتج نهائيًا؟')) return;
+  await supabase.from('products').delete().eq('id', id);
+  await loadProducts();
+}
+
+async function editPrices(id){
+  const p = products.find(x=>x.id===id);
+  const newTiers = [];
+  for(let i=0;i<p.tiers.length;i++){
+    const t = p.tiers[i];
+    const val = prompt(`سعر "${t.q}" لمنتج ${p.name}:`, t.p);
+    if(val===null) return;
+    newTiers.push({ q:t.q, p: parseFloat(val)||t.p });
+  }
+  await supabase.from('products').update({ tiers:newTiers }).eq('id', id);
+  await loadProducts();
+}
+
+checkSession();
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>متجر بالجملة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rakkas&family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{ --ink:#16332B; --paper:#EFEFE9; --paper-2:#E4E4DC; --red:#C8452E; --yellow:#E8B23B; --line:#c9c9bd; --white:#FBFBF8; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Tajawal',sans-serif; background:var(--paper); color:var(--ink); padding-bottom:90px;}
+  .hero{background:var(--ink); color:#fff; text-align:center; padding:50px 20px 60px;}
+  .hero h1{font-family:'Rakkas'; font-size:44px; margin-bottom:10px;}
+  .hero p{color:#cfd8d2; font-size:15px;}
+  .catnav{position:sticky; top:0; z-index:20; background:var(--paper); border-bottom:1px solid var(--line); padding:14px 0; overflow-x:auto; white-space:nowrap;}
+  .catnav-inner{display:flex; gap:10px; padding:0 20px; max-width:1000px; margin:0 auto;}
+  .cat-pill{font-weight:700; font-size:14px; padding:9px 18px; border-radius:99px; border:1.5px solid var(--line); background:var(--white); cursor:pointer; flex:none;}
+  .cat-pill.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .section{max-width:1000px; margin:0 auto; padding:20px;}
+  .cat-title{font-family:'Rakkas'; font-size:22px; margin:24px 0 14px; display:flex; align-items:center; gap:10px;}
+  .cat-title::after{content:''; flex:1; height:1px; background:var(--line);}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px;}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px;}
+  .card-icon{height:90px; border-radius:12px; background:var(--paper-2); display:flex; align-items:center; justify-content:center; font-size:38px;}
+  .card h3{font-size:16px; font-weight:700;}
+  .unit{font-family:'IBM Plex Sans Arabic'; font-size:12px; color:#7a8580;}
+  .tiers{font-family:'IBM Plex Sans Arabic'; font-size:12.5px; display:flex; flex-direction:column; gap:4px;}
+  .tier-row{display:flex; justify-content:space-between; color:#5b665f;}
+  .tier-row.best b{color:var(--red);}
+  .qty-row{display:flex; justify-content:space-between; align-items:center; margin-top:6px;}
+  .stepper{display:flex; border:1.5px solid var(--line); border-radius:10px; overflow:hidden;}
+  .stepper button{width:32px; height:32px; border:none; background:var(--paper-2); font-size:18px; cursor:pointer;}
+  .stepper input{width:38px; text-align:center; border:none; font-weight:600;}
+  .add-btn{background:var(--ink); color:#fff; border:none; border-radius:10px; padding:9px 14px; font-weight:700; font-size:13px; cursor:pointer;}
+  .add-btn.added{background:var(--red);}
+  .cart-fab{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; border:none; border-radius:99px; padding:14px 26px; font-weight:700; display:flex; gap:10px; align-items:center; cursor:pointer; z-index:30; box-shadow:0 12px 28px rgba(0,0,0,.28);}
+  .count{background:var(--yellow); color:var(--ink); border-radius:99px; min-width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px;}
+  .overlay{position:fixed; inset:0; background:rgba(22,51,43,.5); z-index:40; display:none; align-items:flex-end; justify-content:center;}
+  .overlay.open{display:flex;}
+  .sheet{background:var(--white); width:100%; max-width:520px; border-radius:20px 20px 0 0; max-height:88vh; overflow-y:auto; padding:22px 20px;}
+  .sheet-head{display:flex; justify-content:space-between; margin-bottom:14px;}
+  .sheet-head h2{font-family:'Rakkas'; font-size:22px;}
+  .close-x{background:none; border:none; font-size:20px; cursor:pointer;}
+  .cart-item{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--line); gap:10px;}
+  .remove-x{background:none; border:none; color:var(--red); font-weight:700; cursor:pointer;}
+  .empty{text-align:center; padding:40px 10px; color:#7a8580;}
+  .total-row{display:flex; justify-content:space-between; font-weight:700; padding:16px 0 6px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:13px; font-weight:700; margin-bottom:6px;}
+  .field input, .field textarea{width:100%; border:1.5px solid var(--line); border-radius:10px; padding:11px; font-family:'Tajawal';}
+  .cod-note{background:#fbf3e6; border:1px solid #e8d3a0; border-radius:10px; padding:10px 12px; font-size:12.5px; color:#7a5c1e; margin:14px 0;}
+  .wa-submit{width:100%; background:#25D366; color:#fff; border:none; border-radius:12px; padding:15px; font-weight:900; cursor:pointer;}
+  .loading{text-align:center; padding:60px 20px; color:#7a8580;}
+  .admin-link{position:fixed; bottom:8px; left:8px; font-size:11px; color:#9aa39d; text-decoration:none; z-index:30;}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1 id="heroTitle">جارِ التحميل...</h1>
+  <p id="heroSubtitle"></p>
+</header>
+<nav class="catnav"><div class="catnav-inner" id="catnavInner"></div></nav>
+<main class="section" id="catalog"><div class="loading">جارِ تحميل المنتجات...</div></main>
+<button class="cart-fab" onclick="openCart()">🛒 سلّة الطلب <span class="count" id="fabCount">0</span></button>
+<a class="admin-link" href="admin.html">لوحة التحكم</a>
+
+<div class="overlay" id="cartOverlay" onclick="if(event.target===this) closeCart()">
+  <div class="sheet">
+    <div class="sheet-head"><h2>سلّة الطلب</h2><button class="close-x" onclick="closeCart()">✕</button></div>
+    <div id="cartItems"></div><div id="cartFooter"></div>
+  </div>
+</div>
+<div class="overlay" id="checkoutOverlay" onclick="if(event.target===this) closeCheckout()">
+  <div class="sheet">
+    <div class="sheet-head"><h2>بيانات التوصيل</h2><button class="close-x" onclick="closeCheckout()">✕</button></div>
+    <div class="field"><label>الاسم / اسم المنشأة</label><input id="custName"></div>
+    <div class="field"><label>رقم الجوال</label><input id="custPhone" type="tel"></div>
+    <div class="field"><label>المدينة والحي</label><input id="custCity"></div>
+    <div class="field"><label>ملاحظات (اختياري)</label><textarea id="custNotes"></textarea></div>
+    <div class="cod-note">💵 الدفع عند الاستلام. سنؤكد الطلب معك على واتساب قبل الشحن.</div>
+    <button class="wa-submit" onclick="sendToWhatsapp()">إرسال الطلب عبر واتساب</button>
+  </div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let products = [], settings = {}, categories = [], cart = {};
+
+async function init(){
+  const [{data:prod}, {data:sett}] = await Promise.all([
+    supabase.from('products').select('*').order('sort_order'),
+    supabase.from('settings').select('*')
+  ]);
+  products = prod || [];
+  settings = Object.fromEntries((sett||[]).map(s=>[s.key, s.value]));
+  categories = [...new Set(products.map(p=>p.category))];
+
+  document.title = settings.store_name || 'متجر بالجملة';
+  document.getElementById('heroTitle').textContent = settings.hero_title || settings.store_name || '';
+  document.getElementById('heroSubtitle').textContent = settings.hero_subtitle || '';
+
+  renderCatNav();
+  renderProducts();
+}
+
+function renderCatNav(){
+  document.getElementById('catnavInner').innerHTML = categories.map((c,i)=>
+    `<button class="cat-pill ${i===0?'active':''}" onclick="scrollToCat('${c}', this)">${c}</button>`).join('');
+}
+function scrollToCat(cat, el){
+  document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cat-'+cat).scrollIntoView({behavior:'smooth'});
+}
+
+function tierFor(product, qty){
+  const tiers = product.tiers;
+  if(qty<=0) return tiers[0];
+  const idx = Math.min(Math.floor((qty-1)/4), tiers.length-1);
+  return tiers[idx];
+}
+
+function renderProducts(){
+  const main = document.getElementById('catalog');
+  if(products.length===0){ main.innerHTML = '<div class="empty">ما فيه منتجات بعد — أضفها من لوحة التحكم</div>'; return; }
+  main.innerHTML = categories.map(cat=>{
+    const items = products.filter(p=>p.category===cat);
+    return `<h2 class="cat-title" id="cat-${cat}">${cat}</h2><div class="grid">${items.map(cardHTML).join('')}</div>`;
+  }).join('');
+}
+
+function cardHTML(p){
+  const qty = cart[p.id]?.qty || 0;
+  return `
+    <div class="card">
+      <div class="card-icon">${p.icon||'📦'}</div>
+      <h3>${p.name}</h3>
+      <div class="unit">${p.unit}</div>
+      <div class="tiers">${p.tiers.map((t,i)=>`<div class="tier-row ${i===p.tiers.length-1?'best':''}"><span>${t.q}</span><b>${t.p} ر.س</b></div>`).join('')}</div>
+      <div class="qty-row">
+        <div class="stepper">
+          <button onclick="changeQty('${p.id}',-1)">−</button>
+          <input readonly id="qty-${p.id}" value="${qty}">
+          <button onclick="changeQty('${p.id}',1)">+</button>
+        </div>
+        <button class="add-btn ${qty>0?'added':''}" id="add-${p.id}" onclick="addToCart('${p.id}')">${qty>0?'✓ في السلة':'أضف للسلة'}</button>
+      </div>
+    </div>`;
+}
+
+function changeQty(id, delta){
+  const input = document.getElementById('qty-'+id);
+  let v = parseInt(input.value||'0')+delta;
+  if(v<0) v=0;
+  input.value = v;
+}
+function addToCart(id){
+  const qty = parseInt(document.getElementById('qty-'+id).value||'0');
+  const product = products.find(p=>p.id===id);
+  if(qty<=0) delete cart[id]; else cart[id] = {qty, product};
+  const btn = document.getElementById('add-'+id);
+  btn.classList.toggle('added', qty>0);
+  btn.textContent = qty>0 ? '✓ في السلة' : 'أضف للسلة';
+  updateFab();
+}
+function updateFab(){
+  document.getElementById('fabCount').textContent = Object.values(cart).reduce((s,c)=>s+c.qty,0);
+}
+function cartTotal(){
+  return Object.values(cart).reduce((s,c)=>s+tierFor(c.product,c.qty).p*c.qty,0);
+}
+function openCart(){
+  const wrap = document.getElementById('cartItems'), footer = document.getElementById('cartFooter');
+  const entries = Object.values(cart);
+  if(entries.length===0){ wrap.innerHTML = '<div class="empty">السلة فارغة</div>'; footer.innerHTML=''; }
+  else {
+    wrap.innerHTML = entries.map(c=>{
+      const t = tierFor(c.product,c.qty);
+      return `<div class="cart-item"><div><b>${c.product.icon} ${c.product.name}</b><div class="unit">${c.qty} × ${t.p} ر.س</div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><b>${t.p*c.qty} ر.س</b><button class="remove-x" onclick="removeItem('${c.product.id}')">حذف</button></div></div>`;
+    }).join('');
+    footer.innerHTML = `<div class="total-row"><span>الإجمالي</span><b>${cartTotal()} ر.س</b></div>
+      <button class="wa-submit" style="background:var(--ink)" onclick="closeCart();openCheckout();">متابعة الطلب</button>`;
+  }
+  document.getElementById('cartOverlay').classList.add('open');
+}
+function removeItem(id){
+  delete cart[id];
+  const input = document.getElementById('qty-'+id); if(input) input.value=0;
+  const btn = document.getElementById('add-'+id); if(btn){btn.classList.remove('added'); btn.textContent='أضف للسلة';}
+  updateFab(); openCart();
+}
+function closeCart(){ document.getElementById('cartOverlay').classList.remove('open'); }
+function openCheckout(){ if(Object.keys(cart).length===0){openCart();return;} document.getElementById('checkoutOverlay').classList.add('open'); }
+function closeCheckout(){ document.getElementById('checkoutOverlay').classList.remove('open'); }
+
+function sendToWhatsapp(){
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const city = document.getElementById('custCity').value.trim();
+  const notes = document.getElementById('custNotes').value.trim();
+  if(!name||!phone||!city){ alert('عبّي الاسم ورقم الجوال والمدينة'); return; }
+  let msg = `مرحبًا ${settings.store_name||''} 👋\nأبي أسوي طلب جملة:\n\n`;
+  Object.values(cart).forEach(c=>{
+    const t = tierFor(c.product,c.qty);
+    msg += `• ${c.product.name} — ${c.qty} × (${t.p} ر.س) = ${t.p*c.qty} ر.س\n`;
+  });
+  msg += `\nالإجمالي: ${cartTotal()} ر.س\n\nالاسم: ${name}\nالجوال: ${phone}\nالمدينة: ${city}\n`;
+  if(notes) msg += `ملاحظات: ${notes}\n`;
+  msg += `\nطريقة الدفع: عند الاستلام`;
+  window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+init();
+</script>
+</body>
+</html>
