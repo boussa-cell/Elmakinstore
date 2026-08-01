@@ -90,10 +90,23 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let products = [], settings = {}, categories = [], cart = {};
 
 async function init(){
-  const [{data:prod}, {data:sett}] = await Promise.all([
-    supabase.from('products').select('*').order('sort_order'),
-    supabase.from('settings').select('*')
-  ]);
+ try {
+  if(typeof window.supabase === 'undefined'){
+    document.getElementById('heroTitle').textContent = 'خطأ: مكتبة supabase ما تحمّلت (تأكد من الاتصال بالإنترنت)';
+    return;
+  }
+  const prodRes = await supabase.from('products').select('*').order('sort_order');
+  const settRes = await supabase.from('settings').select('*');
+  if(prodRes.error){
+    document.getElementById('heroTitle').textContent = 'خطأ بجلب المنتجات: ' + prodRes.error.message;
+    document.getElementById('catalog').innerHTML = '<pre style="white-space:pre-wrap;font-size:12px;text-align:right;">' + JSON.stringify(prodRes.error, null, 2) + '</pre>';
+    return;
+  }
+  if(settRes.error){
+    document.getElementById('heroTitle').textContent = 'خطأ بجلب الإعدادات: ' + settRes.error.message;
+    return;
+  }
+  const prod = prodRes.data, sett = settRes.data;
   products = prod || [];
   settings = Object.fromEntries((sett||[]).map(s=>[s.key, s.value]));
   categories = [...new Set(products.map(p=>p.category))];
@@ -104,6 +117,9 @@ async function init(){
 
   renderCatNav();
   renderProducts();
+ } catch(err){
+   document.getElementById('heroTitle').textContent = 'خطأ غير متوقع: ' + (err && err.message ? err.message : String(err));
+ }
 }
 
 function renderCatNav(){
